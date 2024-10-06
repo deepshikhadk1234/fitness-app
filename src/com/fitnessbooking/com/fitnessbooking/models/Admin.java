@@ -11,7 +11,7 @@ public class Admin extends User {
     }
 
     public FitnessClass createClass(String type, int capacity) {
-        FitnessClass fitnessClass = new FitnessClass(type, capacity);
+        FitnessClass fitnessClass = new FitnessClass(type, capacity, description);
         dataStore.getClasses().put(fitnessClass.getId(), fitnessClass);
         System.out.println("Created class: " + type + " with capacity " + capacity);
         return fitnessClass;

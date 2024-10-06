@@ -9,16 +9,18 @@ import com.fitnessbooking.models.FitnessClass;
 import com.fitnessbooking.models.User;
 import com.fitnessbooking.data.DataStore;
 import com.fitnessbooking.exceptions.CustomException;
+import com.fitnessbooking.utils.Validators;
 
 public class Main {
     private static Scanner scanner = new Scanner(System.in);
     private static DataStore dataStore = DataStore.getInstance();
+    private static boolean isRunning = true;
 
     public static void main(String[] args) {
         try {
             System.out.println("Welcome to the Fitness Class Booking System!");
 
-            while (true) {
+            while (isRunning) {
                 System.out.println("\nPlease select an option:");
                 System.out.println("1. Register");
                 System.out.println("2. Login");
@@ -41,7 +43,9 @@ public class Main {
                         break;
                     case 3:
                         System.out.println("Thank you for using the system. Goodbye!");
-                        System.exit(0);
+                        scanner.close();
+                        isRunning = false;
+                        break;
                     default:
                         System.out.println("Invalid choice. Please try again.");
                 }
@@ -61,25 +65,52 @@ public class Main {
             System.out.print("Enter your name: ");
             String name = scanner.nextLine();
 
-            System.out.print("Enter your email: ");
-            String email = scanner.nextLine();
+            String email;
+            while (true) {
+                System.out.print("Enter your email: ");
+                email = scanner.nextLine();
+                if (Validators.isValidEmail(email)) {
+                    break;
+                } else {
+                    System.out.println("Invalid email format. Please try again.");
+                }
+            }
 
-            System.out.print("Enter your password: ");
-            String password = scanner.nextLine();
+            String password;
+            while (true) {
+                System.out.print("Enter your password: ");
+                password = scanner.nextLine();
+                if (Validators.isValidPassword(password)) {
+                    break;
+                } else {
+                    System.out.println("Password must be at least 6 characters long. Please try again.");
+                }
+            }
 
             if (isAdmin) {
                 Admin admin = new Admin(name, email, password);
                 admin.register();
             } else {
-                System.out.print("Select package tier (Platinum/Gold/Silver): ");
-                String tier = scanner.nextLine();
+                String tier;
+                while (true) {
+                    System.out.print("Select package tier (Platinum/Gold/Silver): ");
+                    tier = scanner.nextLine();
+                    if (Validators.isValidTier(tier)) {
+                        break;
+                    } else {
+                        System.out.println("Invalid tier. Please select Platinum, Gold, or Silver.");
+                    }
+                }
                 User user = new User(name, email, password, tier);
                 user.register();
             }
+            System.out.println("Registration successful.");
         } catch (CustomException e) {
             System.err.println(e.getMessage());
+            System.out.println("Please retry !!!");
+            // Registration failed, prompt to try again
         }
-        scanner.close();
+
     }
 
     private static void loginUser() {
@@ -107,7 +138,7 @@ public class Main {
         } catch (CustomException e) {
             System.err.println(e.getMessage());
         }
-        scanner.close();
+
     }
 
     private static void adminMenu(Admin admin) {
@@ -192,7 +223,7 @@ public class Main {
         int capacity = Integer.parseInt(scanner.nextLine());
 
         admin.createClass(type, capacity);
-        scanner.close();
+
     }
 
     private static void scheduleClass(Admin admin) {
@@ -228,14 +259,33 @@ public class Main {
 
         admin.cancelClass(fitnessClass);
 
-        scanner.close();
     }
 
     private static void bookClass(User user) {
         System.out.println("Available Classes:");
+
+        boolean classesAvailable = false;
+
         for (FitnessClass fitnessClass : dataStore.getClasses().values()) {
-            System.out.println("ID: " + fitnessClass.getId() + ", Type: " + fitnessClass.getType()
-                    + ", Scheduled Time: " + fitnessClass.getScheduledTime());
+            // Only display classes that are scheduled and not in the past
+            if (fitnessClass.getScheduledTime() != null && fitnessClass.getScheduledTime().after(new Date())) {
+                String status = fitnessClass.isFull() ? "Full" : "Available";
+                int availableSlots = fitnessClass.getCapacity() - fitnessClass.getAttendees().size();
+
+                System.out.println("ID: " + fitnessClass.getId());
+                System.out.println("Type: " + fitnessClass.getType());
+                System.out.println("Scheduled Time: " + fitnessClass.getScheduledTime());
+                System.out.println("Available Slots: " + availableSlots);
+                System.out.println("Status: " + status);
+                System.out.println("-----------------------------------");
+
+                classesAvailable = true;
+            }
+        }
+
+        if (!classesAvailable) {
+            System.out.println("No classes are currently available for booking.");
+            return;
         }
 
         System.out.print("Enter class ID to book: ");
@@ -247,13 +297,19 @@ public class Main {
             return;
         }
 
+        // Check if the class is scheduled and not in the past
+        if (fitnessClass.getScheduledTime() == null || fitnessClass.getScheduledTime().before(new Date())) {
+            System.out.println("This class is not available for booking.");
+            return;
+        }
+
         try {
             user.bookClass(fitnessClass);
         } catch (CustomException e) {
             System.err.println(e.getMessage());
         }
-        scanner.close();
     }
+
 
     private static void cancelBooking(User user) {
         System.out.println("Your Bookings:");
@@ -279,7 +335,6 @@ public class Main {
         } catch (CustomException e) {
             System.err.println(e.getMessage());
         }
-        scanner.close();
     }
 
     private static Date parseDateTime(String dateTimeStr) throws Exception {

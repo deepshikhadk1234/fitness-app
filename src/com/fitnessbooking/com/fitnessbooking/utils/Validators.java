@@ -14,4 +14,10 @@ public class Validators {
         // Password must be at least 6 characters
         return password != null && password.length() >= 6;
     }
+
+    public static boolean isValidTier(String tier) {
+        return tier.equalsIgnoreCase("Platinum") ||
+                tier.equalsIgnoreCase("Gold") ||
+                tier.equalsIgnoreCase("Silver");
+    }
 }

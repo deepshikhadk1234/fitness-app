@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.UUID;
 
 import com.fitnessbooking.data.DataStore;
 import com.fitnessbooking.exceptions.CustomException;
@@ -19,9 +18,10 @@ public class FitnessClass {
     private List<User> waitlist;    // List of User instances
 
     private DataStore dataStore = DataStore.getInstance();
+    private static int idCounter = 1;
 
     public FitnessClass(String type, int capacity) {
-        this.id = "class-" + UUID.randomUUID().toString();
+        this.id = "class-" + idCounter++;
         this.type = type;
         this.capacity = capacity;
         this.attendees = new HashSet<>();
@@ -116,4 +116,12 @@ public class FitnessClass {
     public List<User> getWaitlist() {
         return waitlist;
     }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+
 }
+
+
