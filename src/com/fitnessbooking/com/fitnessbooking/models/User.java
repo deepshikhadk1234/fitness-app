@@ -3,10 +3,12 @@ package com.fitnessbooking.models;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+//import java.util.Map;
 
-import com.fitnessbooking.data.DataStore;
+//import com.fitnessbooking.data.DataStore;
 import com.fitnessbooking.exceptions.CustomException;
 import com.fitnessbooking.utils.Validators;
+import com.fitnessbooking.utils.HashingPassword;
 
 public class User {
     protected String id;
@@ -17,7 +19,12 @@ public class User {
     protected int bookingLimit;
     public Set<String> currentBookings;
 
-    protected DataStore dataStore = DataStore.getInstance();
+   // private static DataStore dataStore = DataStore.getInstance();
+
+    // protected static DataStore dataStore;
+    //protected Map<String, User> users = dataStore.getUsers();
+    //protected Map<String, FitnessClass> classes = dataStore.getClasses();
+    private Object salt;
 
     public User(String name, String email, String password, String tier) throws CustomException {
         this.id = "user-" + UUID.randomUUID().toString();
@@ -38,13 +45,15 @@ public class User {
 
     private void setPassword(String password) throws CustomException {
         if (Validators.isValidPassword(password)) {
-            // For simplicity, we're storing the plain password.
-            // In production, always hash and salt passwords.
-            this.passwordHash = password; // Replace with proper hashing
+            // Generate a random salt
+            this.salt = HashingPassword.generateSalt();
+            // Hash the password with the generated salt
+            this.passwordHash = HashingPassword.hashPassword(password, this.salt);
         } else {
             throw new CustomException("Password must be at least 6 characters long.");
         }
     }
+    
 
     private void setTier(String tier) {
         this.tier = tier;
@@ -52,33 +61,12 @@ public class User {
     }
 
     private int getBookingLimit(String tier) {
-        switch (tier) {
-            case "Platinum":
-                return 10;
-            case "Gold":
-                return 5;
-            case "Silver":
-            default:
-                return 3;
-        }
-    }
-
-    public void register() throws CustomException {
-        if (dataStore.getUsers().containsKey(this.email)) {
-            throw new CustomException("User already exists with this email.");
-        }
-        dataStore.getUsers().put(this.email, this);
-        System.out.println("User registered: " + this.name);
-    }
-
-    public boolean login(String password) throws CustomException {
-        User user = dataStore.getUsers().get(this.email);
-        if (user != null && user.passwordHash.equals(password)) {
-            System.out.println("User logged in: " + this.name);
-            return true;
-        } else {
-            throw new CustomException("Invalid email or password.");
-        }
+        return switch (tier) {
+            case "Platinum" -> 10;
+            case "Gold" -> 5;
+            //case "Basic" -> 3;
+            default -> 3;
+        };
     }
 
     public void selectPackage(String tier) {
@@ -90,34 +78,33 @@ public class User {
         }
     }
 
-    public void bookClass(FitnessClass fitnessClass) throws CustomException {
-        if (this.currentBookings.size() >= this.bookingLimit) {
-            throw new CustomException("Booking limit reached.");
-        }
-        fitnessClass.addAttendee(this);
-        this.currentBookings.add(fitnessClass.getId());
-        System.out.println("Booked class: " + fitnessClass.getType() + " at " + fitnessClass.getScheduledTime());
-    }
-
-    public void cancelBooking(FitnessClass fitnessClass) throws CustomException {
-        long timeDifference = (fitnessClass.getScheduledTime().getTime() - System.currentTimeMillis()) / (1000 * 60);
-        if (timeDifference < 30) {
-            throw new CustomException("Cannot cancel less than 30 minutes before the class starts.");
-        }
-        if (fitnessClass.removeAttendee(this)) {
-            this.currentBookings.remove(fitnessClass.getId());
-            System.out.println("Cancelled booking for class: " + fitnessClass.getType() + " at " + fitnessClass.getScheduledTime());
-        } else {
-            throw new CustomException("You are not booked for this class.");
-        }
-    }
-
     // Getters and setters (if needed)
+    public String getId() {
+        return id;
+    }
+
     public String getName() {
         return name;
     }
 
     public String getEmail() {
+
         return email;
     }
+    public String getPassword() {
+        return passwordHash;
+    }
+    public Object getSalt() {
+        return salt;
+    }
+    public String getTier() {
+        return tier;
+    }
+    public int getBookingLimit() {
+        return bookingLimit;
+    }
+    public Set<String> getCurrentBookings() {
+        return currentBookings;
+    }
+
 }

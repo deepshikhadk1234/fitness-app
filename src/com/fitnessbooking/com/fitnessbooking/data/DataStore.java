@@ -7,7 +7,7 @@ import com.fitnessbooking.models.FitnessClass;
 import com.fitnessbooking.models.User;
 
 public class DataStore {
-    private static DataStore instance = null;
+   private static DataStore instance = null;
 
     private Map<String, User> users;
     private Map<String, FitnessClass> classes;
@@ -27,6 +27,12 @@ public class DataStore {
         }
         return instance;
     }
+    // public void setUsers(Map<String, User> users) {
+    //     this.users = users;
+    // }
+    // public void setClasses(Map<String, FitnessClass> classes) {
+    //     this.classes = classes;
+    // }
 
     public Map<String, User> getUsers() {
         return users;
